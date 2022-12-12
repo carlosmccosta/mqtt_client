@@ -1,6 +1,6 @@
 from time import sleep
-from typing import Callable
 import paho.mqtt.client as mqtt
+from fstrings import f
 
 class MqttClient:
     """
@@ -27,23 +27,23 @@ class MqttClient:
             pass
     """
 
-    def __init__(self, host: str, port: int) -> None:
+    def __init__(self, host, port):
         self.host = host
         self.port = port
 
         self.mqtt_client = None
         self.is_connected = None
-        self.on_connected : Callable = None
+        self.on_connected = None
 
         self.reconnect_delay = 10
         self.client_keep_alive_time = 10
         self.polling_delay = 1
 
-    def print(self, msg):
-        print(f'[MqttClient]: {msg}')
+    def print_msg(self, msg):
+        print(f('[MqttClient]: {msg}'))
 
-    def connect(self) -> bool:
-        self.print(f'Connecting to MQTT broker (host: {self.host} | port: {self.port})')
+    def connect(self):
+        self.print_msg(f('Connecting to MQTT broker (host: {self.host} | port: {self.port})'))
 
         try:
             self.is_connected = None
@@ -64,29 +64,29 @@ class MqttClient:
                 sleep(self.reconnect_delay)
                 self.connect()
             
-            self.print("Connected to mqtt-broker")
+            self.print_msg("Connected to mqtt-broker")
             return True
         except Exception:
             sleep(self.reconnect_delay)
-            self.print(f'Retrying to connect with mqtt-broker')
+            self.print_msg(f('Retrying to connect with mqtt-broker'))
             self.connect()
 
     def on_connect(self, client, userdata, flags, rc):
-        self.print(f'Received connect() status [{rc}]')
+        self.print_msg(f('Received connect() status [{rc}]'))
         self.is_connected = rc == mqtt.MQTT_ERR_SUCCESS
         if self.is_connected and self.on_connected:
             self.on_connected()
 
     def on_disconnect(self, client, userdata, rc):
-        self.print("Client disconnected from mqtt-broker")
+        self.print_msg("Client disconnected from mqtt-broker")
         self.is_connected = None
 
-    def publish(self, topic: str, data: str) -> None:
+    def publish(self, topic, data):
         if self.mqtt_client.is_connected:
             message = self.mqtt_client.publish(topic, data, qos=2)
             message.wait_for_publish()
 
-    def subscribe(self, topic: str, handler: Callable) -> None:
+    def subscribe(self, topic, handler):
         if self.mqtt_client.is_connected:
             self.mqtt_client.subscribe(topic)
             self.mqtt_client.message_callback_add(topic, handler)
